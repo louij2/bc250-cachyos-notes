@@ -24,6 +24,7 @@ excellent reference documentation already exists; see [Credits](#credits).
 
 - [`docs/troubleshooting.md`](docs/troubleshooting.md) — real failures and their causes
 - [`docs/unlocks.md`](docs/unlocks.md) — 8-core and 40 CU unlocks, and their persistence models
+- [`docs/thermals.md`](docs/thermals.md) — measured thermal results, liquid-cooled, vs the air-cooled reference
 - [`docs/hardware.md`](docs/hardware.md) — board notes: power, cooling, jumpers
 - [`scripts/setup.sh`](scripts/setup.sh) — one-shot gaming + unlock setup for CachyOS
 
