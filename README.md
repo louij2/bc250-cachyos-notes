@@ -26,6 +26,7 @@ excellent reference documentation already exists; see [Credits](#credits).
 - [`docs/unlocks.md`](docs/unlocks.md) — 8-core and 40 CU unlocks, and their persistence models
 - [`docs/gamemode.md`](docs/gamemode.md) — Steam Deck-style Game Mode, Decky, and the gamescope display race
 - [`docs/thermals.md`](docs/thermals.md) — measured thermal results, liquid-cooled, vs the air-cooled reference
+- [`docs/multi-device.md`](docs/multi-device.md) — syncing saves/themes across machines, Remote Play, emulator sandboxing
 - [`docs/storage.md`](docs/storage.md) — portable games/media drive: one btrfs pool, no fixed split
 - [`docs/pacman-mirrors.md`](docs/pacman-mirrors.md) — upgrade 404s that were a bad mirror, not the repos
 - [`docs/hardware.md`](docs/hardware.md) — board notes: power, cooling, jumpers
