@@ -27,6 +27,7 @@ excellent reference documentation already exists; see [Credits](#credits).
 - [`docs/gamemode.md`](docs/gamemode.md) — Steam Deck-style Game Mode, Decky, and the gamescope display race
 - [`docs/thermals.md`](docs/thermals.md) — measured thermal results, liquid-cooled, vs the air-cooled reference
 - [`docs/storage.md`](docs/storage.md) — portable games/media drive: one btrfs pool, no fixed split
+- [`docs/pacman-mirrors.md`](docs/pacman-mirrors.md) — upgrade 404s that were a bad mirror, not the repos
 - [`docs/hardware.md`](docs/hardware.md) — board notes: power, cooling, jumpers
 - [`scripts/setup.sh`](scripts/setup.sh) — one-shot gaming + unlock setup for CachyOS
 
