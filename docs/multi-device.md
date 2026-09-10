@@ -174,3 +174,141 @@ Multithreaded RSX: true
   user systemd units to `~/.config/systemd/user/`; never fight the read-only root.
 - User services run only while logged in unless lingering is enabled — which
   needs root. In Game Mode you are always logged in, so this is usually moot.
+
+## Mounting a NAS share on both machines
+
+Two working patterns, for an SMB share holding ROMs and a Steam library.
+
+### SMB does not listen on the Tailscale address
+
+The obvious idea — point the mount at the NAS's Tailscale IP so it works from
+anywhere — **does not work**. Most NAS SMB services bind to the LAN interface
+only:
+
+```
+<nas-tailscale-ip>  port 445: CLOSED
+<nas-lan-ip>        port 445: OPEN
+```
+
+The mount fails with:
+
+```
+mount error(111): could not connect to <ip> Unable to find suitable address.
+CIFS: VFS: Error connecting to socket. Aborting operation.
+```
+
+**Use the LAN IP and reach it through a Tailscale subnet route.** The NAS
+advertises its LAN subnet; roaming clients pick it up and the LAN address stays
+valid from anywhere.
+
+### Do not enable `--accept-routes` on a client already on that subnet
+
+If the client lives on the same LAN as the NAS, accepting a route for that same
+subnet is redundant at best and disruptive at worst — it can break local
+connectivity mid-flight, including the SSH session you are working over.
+
+Only roaming clients need `--accept-routes`.
+
+### Pattern A — script (Steam Deck / SteamOS)
+
+Useful where you want an explicit fallback and a machine that is often asleep.
+
+```bash
+SERVER="<nas-lan-ip>"
+declare -A MOUNTS=(
+    ["/mnt/games"]="//<nas-lan-ip>/Games/"
+    ["/mnt/steamnas"]="//<nas-lan-ip>/Games/SteamLibrary"
+)
+
+# clear stale handles first - 'timeout' stops the script hanging on a dead mount
+for MP in "${!MOUNTS[@]}"; do
+    [ ! -d "$MP" ] && sudo mkdir -p "$MP"
+    timeout 2 ls "$MP" &>/dev/null || sudo umount -l "$MP" 2>/dev/null || true
+done
+
+# fall back to Tailscale if the NAS is not reachable locally
+if ! timeout 3 ping -c 1 "$SERVER" &>/dev/null; then
+    sudo tailscale up --accept-routes --accept-dns=false || true
+    sleep 5
+fi
+
+for MP in "${!MOUNTS[@]}"; do
+    mountpoint -q "$MP" && continue
+    timeout 15 sudo mount -t cifs "${MOUNTS[$MP]}" "$MP" \
+      -o credentials=/path/to/creds,uid=1000,gid=1000,iocharset=utf8,vers=3.1.1,\
+file_mode=0777,dir_mode=0777,mfsymlinks,nobrl,soft,retrans=2,_netdev
+done
+```
+
+### Pattern B — systemd automount (preferred for an always-on host)
+
+Mounts on first access, unmounts when idle, retries by itself, and **never
+blocks boot** when the NAS is unreachable. Better for a machine that travels.
+
+`/etc/systemd/system/mnt-nas\x2dgames.mount` — note systemd escapes `-` in unit
+filenames as `\x2d`:
+
+```ini
+[Unit]
+Description=NAS Games share
+After=network-online.target tailscaled.service
+Wants=network-online.target
+
+[Mount]
+What=//<nas-lan-ip>/Games
+Where=/mnt/nas-games
+Type=cifs
+Options=credentials=/etc/samba/creds-nas,uid=1000,gid=1000,iocharset=utf8,vers=3.1.1,file_mode=0777,dir_mode=0777,mfsymlinks,nobrl,soft,retrans=2,_netdev,x-systemd.automount,x-systemd.idle-timeout=600,x-systemd.mount-timeout=15
+TimeoutSec=20
+
+[Install]
+WantedBy=multi-user.target
+```
+
+With a matching `.automount`:
+
+```ini
+[Unit]
+Description=Automount for /mnt/nas-games
+[Automount]
+Where=/mnt/nas-games
+TimeoutIdleSec=600
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl enable --now 'mnt-nas\x2dgames.automount'
+```
+
+### The mount options that matter
+
+Copied from a setup tuned for Steam over SMB, and each earns its place:
+
+- **`mfsymlinks`** — lets Proton and Steam create symlinks on a share that has
+  no native symlink support. Without it, game installs fail in odd ways.
+- **`nobrl`** — disables byte-range locking. Fixes downloads that hang at
+  0 bytes.
+- **`file_mode=0777,dir_mode=0777`** — SMB carries no usable POSIX permissions;
+  without these Steam cannot write.
+- **`soft,retrans=2`** — fail rather than block forever when the NAS vanishes.
+  Prevents the whole UI freezing on a dropped connection.
+- **`_netdev`** — do not try to mount before the network exists.
+
+### Watch the mount point names
+
+If the host already has local storage mounted at `/mnt/games`, a NAS share
+cannot also mount there — the unit fails with `No such device` and the cause is
+not obvious from the error. Give the NAS its own path (`/mnt/nas-games`) and
+keep local and remote clearly distinct.
+
+### Credentials
+
+Keep them in a root-owned file, mode `600`, referenced by `credentials=`:
+
+```
+username=<user>
+password=<pass>
+```
+
+Never inline a password in a unit file or fstab entry - those are world-readable.
