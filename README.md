@@ -26,6 +26,7 @@ excellent reference documentation already exists; see [Credits](#credits).
 - [`docs/unlocks.md`](docs/unlocks.md) — 8-core and 40 CU unlocks, and their persistence models
 - [`docs/gamemode.md`](docs/gamemode.md) — Steam Deck-style Game Mode, Decky, and the gamescope display race
 - [`docs/thermals.md`](docs/thermals.md) — measured thermal results, liquid-cooled, vs the air-cooled reference
+- [`docs/storage.md`](docs/storage.md) — portable games/media drive: one btrfs pool, no fixed split
 - [`docs/hardware.md`](docs/hardware.md) — board notes: power, cooling, jumpers
 - [`scripts/setup.sh`](scripts/setup.sh) — one-shot gaming + unlock setup for CachyOS
 
