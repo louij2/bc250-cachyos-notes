@@ -12,11 +12,41 @@ RADV_DEBUG=info vulkaninfo --summary | grep num_cu
 ./scripts/cu_map.sh                          # from duggasco/bc250-40cu-unlock
 ```
 
-**`vulkaninfo` and `cu_map.sh` can disagree, and the difference matters.**
-`num_cu` reports what amdgpu enumerated *at driver init*. Runtime CU tools write
-dispatch registers *after* that, so the driver keeps reporting 24 regardless.
-`cu_map.sh` reads the actual masks. Trust the map, and confirm with a benchmark
-rather than any enumeration.
+### Three tools, three different answers — only one is right
+
+This cost us a lot of confusion, so it is worth being explicit:
+
+| Tool | Reports | Why |
+|---|---|---|
+| `vulkaninfo` `num_cu` | **24** | What amdgpu enumerated at driver init. Never changes. |
+| `cu_map.sh` (duggasco) | **24/40** | Reads the driver's CC/harvest registers only. |
+| `bc250-cu-live-manager status` | **40/40** | Reads CC *and* the SPI dispatch masks. |
+
+**`bc250-cu-live-manager status`, run as root, is the authoritative view.**
+
+The runtime unlock does not change what the driver enumerated — it routes the
+extra WGPs via **SPI dispatch masks**. The dashboard's legend makes this
+explicit: `D+` is driver-enumerated and routed, `S+` is SPI-routed. A working
+40 CU system shows three `D+` and two `S+` per shader array:
+
+```
+| Row     | WGP0 | WGP1 | WGP2 | WGP3 | WGP4 | SPI  | CUs   |
+| SE0.SH0 |  D+  |  D+  |  D+  |  S+  |  S+  | 0x1f | 10/10 |
+...
+CUs active & routed : 40/40
+```
+
+So `cu_map.sh` reporting 24/40 does **not** mean the unlock failed — it means
+that tool cannot see SPI routing. Check the live manager dashboard before
+concluding anything is broken.
+
+Also note `umr` **silently needs root**. Run `cu_map.sh` unprivileged and it
+prints a plausible-looking 24/40 built from a failed register read:
+
+```
+[ERROR]: ASIC not found or compatible (instance=256, did=ffffffffffffffff)
+[ERROR]: UMR was not invoked as root.
+```
 
 ### Proving the BIOS is not delivering 8 cores
 
