@@ -145,3 +145,100 @@ CSS Loader themes in `~/homebrew/themes/` are plain files and safe to copy.
 Deck-hardware plugins install but have nothing to talk to on a BC-250:
 PowerTools (Deck SMU/TDP), Fantastic (Deck fan), ControllerTools (built-in
 controller), and anything battery-related.
+
+## Black screen where the QAM overlay still works
+
+A distinct failure from the boot-time one above, and it recurs. The overlay
+renders when you press the guide button, but the home view stays black.
+
+### First: confirm whether it actually slept
+
+"It went to sleep" is usually wrong. Check before chasing suspend/resume bugs:
+
+```bash
+uptime -p
+journalctl -b | grep -icE "PM: suspend entry|Entering sleep|Freezing user space"
+systemctl is-enabled sleep.target suspend.target
+```
+
+Zero suspend events with a long uptime means the **monitor** blanked, not the
+system. Suspend/resume fixes are then irrelevant — a very easy hour to waste.
+
+### Cause: gamescope is pointed at a connector that does not exist
+
+The SteamOS session script hardcodes the Steam Deck's internal panel as the
+preferred output:
+
+```bash
+# /usr/lib/steamos/gamescope-session
+-O "${OUTPUT_CONNECTOR:-*,eDP-1}"
+```
+
+On any machine that is not a Deck there is no `eDP-1`. It limps along on the
+`*` fallback, but gamescope has no valid preferred output, and re-acquiring a
+display that has blanked and returned is where that surfaces.
+
+Check what is actually running:
+
+```bash
+tr '\0' ' ' < /proc/$(pgrep -f '^gamescope ' | head -1)/cmdline | grep -oE '\-O [^ ]+'
+```
+
+Fix with a systemd drop-in so it survives package updates — substitute your own
+connector from `ls /sys/class/drm/`:
+
+```bash
+sudo mkdir -p /etc/systemd/user/gamescope-session.service.d
+sudo tee /etc/systemd/user/gamescope-session.service.d/20-output-connector.conf <<'CONF'
+[Service]
+Environment=OUTPUT_CONNECTOR=DP-1
+CONF
+sudo systemctl daemon-reload
+```
+
+Other tunables the same script exposes, all overridable the same way:
+`DRM_MODE`, `MAX_SCALE`, `XWAYLAND_COUNT`, `TOUCH_MODE`, `HIDE_CURSOR_DELAY_MS`,
+`FADE_OUT_DURATION_MS`.
+
+### Restarting the session — two traps
+
+**`gamescope-session.service` refuses manual start.** It is
+`RefuseManualStart=yes`; restart the *target*:
+
+```bash
+systemctl --user restart gamescope-session.target
+```
+
+**Do not drive `systemctl --user` through `sudo -u`.** It does not reach the
+right user manager, does nothing, and still reports the unit as `active`
+because the original process is untouched.
+
+Always verify a restart actually happened by checking the PID and timestamp,
+not the state:
+
+```bash
+systemctl --user show gamescope-session -p MainPID,ExecMainStartTimestamp
+```
+
+A restart that reports `active` while `ExecMainStartTimestamp` still reads
+yesterday has done nothing.
+
+### Stopping the blanking in the first place
+
+There is no DPMS or idle logic in the gamescope session script. The screen-off
+timer is **Steam's own**: Settings → Power → "Turn off screen after" → Never.
+Worth setting on any mains-powered box.
+
+### Ruling out the other cause
+
+The same symptom — overlay fine, home view black — is also produced by CSS
+Loader themes authored for a different resolution. Check that too:
+
+```bash
+grep -l '"active": true' ~/homebrew/themes/*/config_USER.json \
+  | sed 's|.*/themes/||;s|/config_USER.json||'
+```
+
+Distinguishing them: a theme problem appears immediately on session start and
+after any Decky restart; the connector problem appears only after the display
+has blanked and returned.
