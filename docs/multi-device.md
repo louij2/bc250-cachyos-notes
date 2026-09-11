@@ -312,3 +312,52 @@ password=<pass>
 ```
 
 Never inline a password in a unit file or fstab entry - those are world-readable.
+
+## Working out whether bad game streaming is the host, the client, or the network
+
+Steam writes a per-frame breakdown that answers this directly, so there is no
+need to guess or to start changing settings at random.
+
+```bash
+grep 'Slow framerate' ~/.local/share/Steam/logs/streaming_log.txt | tail
+```
+
+Each line is a millisecond budget per stage, with Steam's own verdict in
+brackets:
+
+```
+Slow framerate: game 0.00, capture 0.78, convert 0.01,
+                encode 8.64, network 33.59, decode 0.97, display 5.73  (network)
+```
+
+- **game** — the title itself is slow. Fix the game or the GPU.
+- **capture / convert / encode** — the host. High `encode` means the encoder is
+  struggling; on the BC-250 healthy values are single-digit milliseconds.
+- **network** — the path between them. Nothing on either machine will fix this.
+- **decode / display** — the client device is too slow.
+
+Count them to get the verdict at a glance:
+
+```bash
+for s in game encode network decode; do
+  printf "%-8s %s\n" "$s" \
+    "$(grep -c "Slow framerate.*($s)" ~/.local/share/Steam/logs/streaming_log.txt)"
+done
+```
+
+A result of 641 `network` against 0 `encode` and 0 `game` means the host is
+comfortable and the link is the constraint — do not spend time tuning the host.
+
+Also check whether the session is relayed, which caps throughput hard:
+
+```bash
+grep -iE 'direct connection|indirect connection|relay' \
+  ~/.local/share/Steam/logs/remote_connections.txt | tail
+```
+
+`connected via direct connection` is what you want. `indirect` means traffic is
+going through a Steam relay.
+
+When the verdict is `network`, the levers are all on the client side: lower the
+streaming quality preset, cap the bitrate, and drop the resolution. A remote
+session over someone else's WiFi will not sustain what a LAN session does.

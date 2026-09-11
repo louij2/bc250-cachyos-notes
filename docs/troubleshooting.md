@@ -141,3 +141,42 @@ Measured on this box, a LanCache request went from traversing the tunnel to
 
 Only enable `--accept-routes` on nodes that are genuinely *remote* from the
 subnets being advertised.
+
+## Governor shipped throttling at the temperature that causes crashes
+
+Worth checking on any BC-250, because the default is not conservative.
+
+`cyan-skillfish-governor-smu` config as deployed here had:
+
+```toml
+[temperature]
+throttling = 90
+throttling_recovery = 82
+```
+
+The hardware docs state that above 85 °C the system may throttle, and **above
+90 °C instability and crashes occur**. So the governor was configured not to
+back off until the GPU had already reached the temperature at which the board
+is documented to fall over.
+
+This is a strong candidate for unexplained hard-locks that leave nothing in the
+logs — a thermal lock-up kills the machine before anything is written to disk,
+so it looks identical to "it just died".
+
+The documented values:
+
+```toml
+[temperature]
+throttling = 85
+throttling_recovery = 75
+```
+
+```bash
+sudo systemctl restart cyan-skillfish-governor-smu
+```
+
+Check yours before assuming it is sane:
+
+```bash
+grep -A3 '\[temperature\]' /etc/cyan-skillfish-governor-smu/config.toml
+```

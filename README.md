@@ -30,6 +30,7 @@ excellent reference documentation already exists; see [Credits](#credits).
 - [`docs/storage.md`](docs/storage.md) — portable games/media drive: one btrfs pool, no fixed split
 - [`docs/pacman-mirrors.md`](docs/pacman-mirrors.md) — upgrade 404s that were a bad mirror, not the repos
 - [`docs/hardware.md`](docs/hardware.md) — board notes: power, cooling, jumpers
+- [`docs/benchmarks.md`](docs/benchmarks.md) — measured CPU/GPU baselines, and how to benchmark a box that is in Game Mode
 - [`docs/remote-power.md`](docs/remote-power.md) — running it headless: DP dummy plug, Wake-on-LAN, remote power off/on
 - [`scripts/setup.sh`](scripts/setup.sh) — one-shot gaming + unlock setup for CachyOS
 
