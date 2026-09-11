@@ -110,3 +110,34 @@ Cause: statically-configured hosts sitting **inside** the DHCP pool range.
 
 Note for ISC dhcpd: a reservation inside the dynamic range is **not**
 automatically excluded from that range. Keep reservations outside the pool.
+
+## Tailscale `--accept-routes` sending local LAN traffic through the tunnel
+
+If another node on your tailnet advertises a subnet route for the LAN the
+BC-250 is **already physically on**, and the BC-250 has `--accept-routes`
+enabled, the box will install that route and send traffic to its own local
+subnet over `tailscale0` instead of out of the NIC.
+
+Everything still works, which is why this hides — it just gets slower, and
+anything bandwidth-sensitive on the LAN (a LanCache instance, a NAS, local
+game streaming) quietly loses most of its throughput.
+
+Check where local traffic actually goes:
+
+```bash
+ip -o route get <local-ip> | awk '{for(i=1;i<=NF;i++) if($i=="dev") print $(i+1)}'
+# want: your ethernet interface.  bad: tailscale0
+tailscale debug prefs | grep RouteAll
+```
+
+Fix — a host that is physically on the subnet does not need a route to it:
+
+```bash
+sudo tailscale set --accept-routes=false
+```
+
+Measured on this box, a LanCache request went from traversing the tunnel to
+`200 in 0.0015s` straight over the wire.
+
+Only enable `--accept-routes` on nodes that are genuinely *remote* from the
+subnets being advertised.
