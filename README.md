@@ -32,6 +32,7 @@ excellent reference documentation already exists; see [Credits](#credits).
 - [`docs/hardware.md`](docs/hardware.md) — board notes: power, cooling, jumpers
 - [`docs/benchmarks.md`](docs/benchmarks.md) — measured CPU/GPU baselines, and how to benchmark a box that is in Game Mode
 - [`docs/css-themes.md`](docs/css-themes.md) — why CSS Loader themes die after a Steam update, and a script to re-point them
+- [`docs/millennium.md`](docs/millennium.md) — porting CSS Loader themes to Millennium on Windows Big Picture: merge converter, one-theme limit, live verification
 - [`docs/lancache-monitoring.md`](docs/lancache-monitoring.md) — Prometheus/Grafana metrics for LanCache, and the log-format traps
 - [`docs/steamlink-monitoring.md`](docs/steamlink-monitoring.md) — Prometheus metrics for Steam Remote Play, incl. spotting the relay trap
 - [`docs/remote-power.md`](docs/remote-power.md) — running it headless: DP dummy plug, Wake-on-LAN, remote power off/on

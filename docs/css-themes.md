@@ -106,6 +106,9 @@ this script still match under Millennium. Millennium uses `skin.json` rather
 than CSS Loader's `theme.json`, and matches patches against the window title or
 classes; desktop Big Picture's window title is `Steam Big Picture Mode`.
 
+To port themes over, including merging several into Millennium's single
+active theme, see [`millennium.md`](millennium.md).
+
 ### What it deliberately does not do
 
 The remaining ~20% are components Steam genuinely renamed or removed, where the
