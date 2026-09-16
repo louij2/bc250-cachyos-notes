@@ -33,6 +33,7 @@ excellent reference documentation already exists; see [Credits](#credits).
 - [`docs/benchmarks.md`](docs/benchmarks.md) — measured CPU/GPU baselines, and how to benchmark a box that is in Game Mode
 - [`docs/css-themes.md`](docs/css-themes.md) — why CSS Loader themes die after a Steam update, and a script to re-point them
 - [`docs/lancache-monitoring.md`](docs/lancache-monitoring.md) — Prometheus/Grafana metrics for LanCache, and the log-format traps
+- [`docs/steamlink-monitoring.md`](docs/steamlink-monitoring.md) — Prometheus metrics for Steam Remote Play, incl. spotting the relay trap
 - [`docs/remote-power.md`](docs/remote-power.md) — running it headless: DP dummy plug, Wake-on-LAN, remote power off/on
 - [`scripts/setup.sh`](scripts/setup.sh) — one-shot gaming + unlock setup for CachyOS
 
