@@ -27,8 +27,9 @@ def resolve(name,short):
     return None
 
 tot=chg=0; per=collections.Counter()
-for css in sorted(glob.glob(T+'/*/*.css')):
-    theme=css.split('/')[-2]
+# recurse: themes keep option CSS in subfolders (colors/, recents/, other/ ...)
+for css in sorted(glob.glob(T+'/**/*.css', recursive=True)):
+    theme=os.path.relpath(css,T).split(os.sep)[0]
     try: s=open(css,errors='ignore').read()
     except Exception: continue
     orig=s
@@ -42,7 +43,9 @@ for css in sorted(glob.glob(T+'/*/*.css')):
         return mo.group(0)
     s=sel.sub(sub,s)
     if s!=orig:
-        open(css+'.pre-hashfix.bak','w').write(orig)
+        # keep the FIRST original only - a re-run must never overwrite it with fixed CSS
+        if not os.path.exists(css+'.pre-hashfix.bak'):
+            open(css+'.pre-hashfix.bak','w').write(orig)
         open(css,'w').write(s)
 print("  selectors seen: %d   rewritten: %d" % (tot,chg))
 for t,c in per.most_common(): print("    %-34s %d rules" % (t[:34],c))

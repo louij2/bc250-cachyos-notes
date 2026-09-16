@@ -84,6 +84,28 @@ python3 fix-css-themes.py
 Result on the reference machine: **0% → 80%** of theme selectors matching live
 Steam classes, 1306 rules rewritten across 21 themes.
 
+### Two bugs fixed after the first release
+
+- **Option subfolders were skipped.** Themes keep their colour and option CSS
+  in subfolders (`colors/`, `recents/`, `other/`). The first version only
+  globbed one level deep, so on the reference machine 42 of 96 option files
+  were never repaired — every colour choice silently did nothing. The script
+  now recurses; a re-run rewrote 198 more rules and left 5 files that only
+  reference components Steam removed.
+- **Re-running overwrote the backups.** Each run wrote `.pre-hashfix.bak`
+  unconditionally, so a second run replaced the original CSS with
+  already-rewritten CSS. It now keeps the first original only. If you ran the
+  old version twice, restore from the `themes-backup-*.tar.gz` it also writes.
+
+### On Windows with Millennium
+
+Millennium (the Windows equivalent of Decky/CSS Loader) rewrites Steam's class
+map from `Name:"hash"` to `Name:"hash Name"` — elements keep the hash **and**
+gain the readable component name as an extra class. So selectors re-pointed by
+this script still match under Millennium. Millennium uses `skin.json` rather
+than CSS Loader's `theme.json`, and matches patches against the window title or
+classes; desktop Big Picture's window title is `Steam Big Picture Mode`.
+
 ### What it deliberately does not do
 
 The remaining ~20% are components Steam genuinely renamed or removed, where the
